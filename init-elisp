@@ -1,0 +1,423 @@
+#!/usr/bin/env -S emacs -Q --script
+
+
+;;; Info:
+;; this is my personal River config, written in Emacs Lisp. Meow.
+
+;;; Notes to self:
+;; Emacs macros:
+;; ` - everything down is a template; in the output, unchanged.
+;; , - eval all shit below NOW. BEFORE output. (subexp)
+;; ,@ - eval all shit below NOW, AND splice list to make same level as above. (listexp)
+;;
+;; save log of every command ran, run prev with keybind?
+;;
+;; Order:
+;; 1: personal config
+;; 2: code
+;; 3: website
+;; 4:
+;; 5: tools
+;; 6: 
+;; 7: 
+;; 8: 
+;; 9: draw
+;;
+;; for keymap keywords :enter-from and :exit-to, do
+;; (:enter-from
+;;  (:normal "s-s")
+;;  (:main "s"))
+;; ^loop through all options instead of just the first arg.
+;; - make this a general logic used by other functions/macros?
+;; when rewriting it all eventually?
+
+
+;; Load lib file:
+(load "$HOME/.config/river/init-elisp-lib.el")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; config:
+;;;
+
+;;; Settings:
+
+(river-set ;; env
+           (spawn "dbus-update-activation-environment SEATD_SOCK DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=river SDL_VIDEODRIVER=wayland MOZ_ENABLE_WAYLAND=1")
+           ;; Color
+           (background-color 0x9370db) ;; #9370db
+           (border-color-focused 0x946a90) ;; #946a90
+           (border-color-unfocused 0x040a0a) ;; #040a0a
+           ;; Keyboard 
+           (keyboard-layout -variant "dvp," -options "grp:sclk_toggle,ctrl:nocaps" "us,us")
+           (set-repeat 80 210)
+           (input "pointer-1267-12864-ELAN0412:00_04F3:3240_Touchpad" tap enabled))
+
+;;; System
+
+(river-bind :normal
+            ("s-S-q" exit)
+            ("s-<f12>" spawn "loginctl hibernate")
+            ("s-C-r" spawn "~/.config/river/init")
+            ("s-C-l" spawn "swaylock"))
+
+;;; Basic programs
+
+(river-bind :normal
+            ("s-RET" spawn "alacritty")
+            ("s-c" spawn "emacsclient -a '' -c"))
+
+;;; Windows
+
+(river-bind :normal
+            ("s-M-d" close)
+            ("s-f" toggle-fullscreen)
+            ;; change focus
+            ("s-n" focus-view next)
+            ("s-t" focus-view previous)
+            ;; swap
+            ("s-M-n" swap next)
+            ("s-M-t" swap previous)
+            ;; bump into focused view
+            ("s-M-RET" zoom)
+            ;; adjust ratio (rivertile)
+            ;; ("s-M-b" send-layout-cmd rivertile "main-ratio -.05")
+            ;; ("s-M-m" send-layout-cmd rivertile "main-ratio +.05")
+            ;; change count in master and stack (rivertile)
+            ;; ("s-C-n" send-layout-cmd rivertile "main-count +1")
+            ;; ("s-C-t" send-layout-cmd rivertile "main-count -1")
+            ;; adjust ratio (wideriver)
+            ("s-M-b" send-layout-cmd wideriver "--ratio +0.025")
+            ("s-M-m" send-layout-cmd wideriver "--ratio -0.025")
+            ("s-M-x" send-layout-cmd wideriver "--ratio 0.60")
+            ;; change count in master and stack (wideriver)
+            ("s-C-n" send-layout-cmd wideriver "--count +1")
+            ("s-C-t" send-layout-cmd wideriver "--count -1")
+            ("s-C-s" send-layout-cmd wideriver "--count 1")
+            ;; stack modes (wideriver)
+            ("s-M-<left>" send-layout-cmd wideriver "--stack even")
+            ("s-M-<down>" send-layout-cmd wideriver "--stack dwindle")
+            ("s-M-<right>" send-layout-cmd wideriver "--stack diminish")
+            ;; focus on next/prev output
+            ("s-C-m" focus-output next)
+            ("s-C-b" focus-output previous)
+            ;; send focused window to next/prev output
+            ("s-C-M-m" send-to-output next)
+            ("s-C-M-b" send-to-output previous))
+
+;;; Window modes
+
+(river-bind :normal
+            ;; rivertile
+	    ;; ("s-<up>" send-layout-cmd rivertile "main-location top")
+	    ;; ("s-<right>" send-layout-cmd rivertile "main-location right")
+	    ;; ("s-<down>" send-layout-cmd rivertile "main-location bottom")
+	    ;; ("s-<left>" send-layout-cmd rivertile "main-location left")
+            ;; wideriver
+	    ("s-<up>" send-layout-cmd wideriver "--layout monocle")
+	    ("s-<down>" send-layout-cmd wideriver "--layout wide")
+	    ("s-<left>" send-layout-cmd wideriver "--layout left")
+	    ("s-<right>" send-layout-cmd wideriver "--layout right")
+            ("s-M-SPC" send-layout-cmd wideriver "--layout-toggle"))
+
+;;; Window rules
+
+(river-set ;; start floating
+           (float-filter-add app-id float)
+           (float-filter-add title "Extension: (NoScript) - NoScript Settings — Nightly")
+           ;; use client-side decorations
+           (csd-filter-add app-id "gedit")
+           ;; warp cursor
+           (set-cursor-warp on-focus-change))
+
+;;; Floating controls
+
+;; tmp: arrange, , tag
+
+(river-bind :normal
+            ;; floating mode
+            ("s-S-SPC" toggle-float)
+            ;; move views
+	    ("s-S-h" move left 100)
+	    ("s-S-t" move up 100)
+	    ("s-S-n" move down 100)
+	    ("s-S-s" move right 100)
+	    ;; snap views to screen edges
+            ("s-S-C-h" snap left 100)
+            ("s-S-C-t" snap up 100)
+            ("s-S-C-n" snap down 100)
+            ("s-S-C-s" snap right 100)
+	    ;; resize views
+	    ("s-S-M-h" resize horizontal -100)
+	    ("s-S-M-t" resize vertical 100)
+	    ("s-S-M-n" resize vertical -100)
+	    ("s-S-M-s" resize horizontal 100))
+
+;;; Tags
+
+(river-bind :normal
+            ("s-<tab>" focus-previous-tags) ; TODO: implement actual toggling!
+            ("s-M-r" focus-previous-tags)
+            ("s-M-h" spawn "flow cycle-tags previous")
+            ("s-M-s" spawn "flow cycle-tags next"))
+
+;; numbers row tag commands
+(cl-flet ((commands (x tag)
+            (setq x (num-to-kbd-real-dvp x))
+            (eval `(river-bind :normal
+                               (,(format "s-%s" x) spawn ,(format "flow toggle-tags %s" tag))
+                               (,(format "s-S-%s" x) set-view-tags ,tag) ; send to tag
+                               (,(format "s-M-%s" x) toggle-focused-tags ,tag) ; toggle current tag
+                               (,(format "s-M-C-%s" x) toggle-view-tags ,tag))))) ; toggle tag
+  (cl-loop for x from 1 to 9
+           do (let ((tag (ash 1 (1- x))))
+                (commands x tag))))
+
+;; view all tags
+(let ((all-tags (1- (ash 1 32))))
+  (eval `(river-bind :normal
+                     ("s-]" set-focused-tags ,all-tags)
+                     ("s-S-]" set-view-tags ,all-tags)
+                     ("s-$" set-focused-tags ,all-tags)
+                     ("s-S-$" set-view-tags ,all-tags))))
+
+;;; Special
+
+(let ((binds
+       '(;; Audio
+         ("<XF86AudioRaiseVolume>" spawn "volume-adjust.sh +10%")
+	 ("<XF86AudioLowerVolume>" spawn "volume-adjust.sh -10%")
+         ("S-<XF86AudioRaiseVolume>" spawn "volume-adjust.sh +5%")
+	 ("S-<XF86AudioLowerVolume>" spawn "volume-adjust.sh -5%")
+	 ("<XF86AudioMute>" spawn "pactl set-sink-mute @DEFAULT_SINK@ toggle")
+         ;; Brightness
+	 ("<XF86MonBrightnessUp>" spawn "brightnessctl set 10%+")
+         ("<XF86MonBrightnessDown>" spawn "brightnessctl set 10%-")
+         ("S-<XF86MonBrightnessUp>" spawn "brightnessctl set 5%+")
+         ("S-<XF86MonBrightnessDown>" spawn "brightnessctl set 5%-")
+         ;; Media
+         ("<XF86AudioPlay>" spawn "playerctl play-pause"))))
+  (eval `(river-bind :normal ,binds
+		     :locked ,binds)))
+
+;; screenshots
+(river-bind :normal
+            ("<print>" spawn "grimshot --notify save area")
+            ("S-<print>" spawn "grimshot --notify save output"))
+
+;;; Passthrough mode
+
+;; Declare a passthrough mode. This mode has only a single mapping to return to
+;; normal mode. This makes it useful for testing a nested wayland compositor
+;; (river-set declare-mode passthrough)
+;; TODO: use keymap macros! (make the ":" act as a shorthand only if end of
+;;  root list and no sublists found (tail))
+(river-declare-keymap :passthrough)
+
+;; Super+F11 to enter passthrough mode
+(river-bind :normal "s-<f11>" enter-mode passthrough)
+
+;; Super+F11 to return to normal mode
+(river-bind :passthrough "s-<f11>" enter-mode normal)
+
+;;; Misc
+
+
+;;; Startup
+
+;; swaybg
+(river-set (spawn "pkill -f '^swaybg'
+swaybg -m fill -i ~/Pictures/Random-images/glt-landscape2.png"))
+
+;; notifications
+(river-set (spawn "mako --border-radius=2 --font='Deva Vu Sans 10' \\
+--max-visible=5 --outer-margin=5 --margin=3 --background='#1c1f26' \\
+--border-color='#89AAEB' --border-size=1 --default-timeout=7000"))
+
+;; wlsunset
+(river-set (spawn "killall wlsunset
+wlsunset -S 10:00 -s 19:00 -t 3000 -T 6500"))
+
+;; sandbar
+(river-set (spawn "pkill -f '^sandbar'
+$HOME/.config/river/bar"))
+
+;; sandbar status
+(river-set (spawn "pkill -f '^sh.*\\.config/river/status'
+$HOME/.config/river/status"))
+
+;; yambar
+;; (river-set (spawn "killall yambar
+;; yambar -c ~/.config/yambar/laptop.yml"))
+
+;; waybar
+;; (river-set (spawn "(($(pgrep -cx waybar) > 0)) && killall waybar;
+;; waybar -c $HOME/.config/waybar/config -s $HOME/.config/waybar/style.css"))
+
+;; swayidle
+(river-set (spawn "
+swayidle -w
+timeout 900"))
+;; # exec swayidle -w \
+;; #   timeout 900 $lock \
+;; #   timeout 960 'swaymsg "output * dpms off"' \
+;; # 	resume 'swaymsg "output * dpms on"' \
+;; #   before-sleep $lock
+
+;; TODO^^^
+
+;;; Applications
+
+;; launch commands
+(river-bind :normal
+            ("s-a" spawn "bemenu-run")
+            ("s-o" spawn "fuzzel -w 50 -x 8 -y 8 -r 3 \\
+-b 232635ff -t A6Accdff -s A6Accdff -S 232635ff -C c792eacc -m c792eacc \\
+-f 'Iosevka Aile:weight=light:size=11' --no-fuzzy --icon-theme='Papirus-Dark'"))
+
+;; set themes
+(river-set (spawn "gsettings set org.gnome.desktop.interface \\
+gtk-theme 'Matcha-dark-azul'")
+           (spawn "gsettings set org.gnome.desktop.interface \\
+icon-theme 'Papirus-Dark'")
+           (spawn "gsettings set org.gnome.desktop.interface \\ 
+font-name \"Iosevka Aile 11\""))
+
+;;; Keymaps
+
+;; idea: upon entering :main keymap, create floating window and focus,
+;;  if window detects text, riverctl enter normal!
+
+;; idea: for river-bind, if elem is macro shorthand, scan rest of list on
+;;  same level until find another or reach end. If match, wrap that region
+;;  with a list.
+
+(river-declare-keymap :main)
+
+(river-keymap :main
+  (:bind
+   ("g" spawn "emacsclient -a '' -c")
+   ("n" spawn "$HOME/code/in-use/rofi-network-manager/rofi-network-manager.sh")
+   ("," spawn "playerctl previous")
+   ("." spawn "playerctl next"))
+  (:exit-to
+   :normal ("C-g" "<escape>" "RET" "s-g"))
+  (:enter-from
+   :normal ("s-g")))
+
+
+;;;
+;; (river-keymap-new apps
+;;   (:bind
+;;    ("f" spawn "firefox")
+;;    ("l" spawn "flatpak run io.gitlab.librewolf-community")
+;;    ("p" spawn "firejail keepassxc"))
+;;   (:exit-to
+;;    (normal ("C-g" "<escape>" "RET" "s-g")))
+;;   (:enter-from
+;;    (main ("a"))))
+;;;
+
+(river-declare-keymap :apps)
+
+(river-keymap :apps
+  (:bind
+   ("f" spawn "firefox")
+   ("l" spawn "flatpak run io.gitlab.librewolf-community")
+   ("p" spawn "firejail keepassxc")
+   ("d" spawn "flatpak run dev.vencord.Vesktop")
+   ("s" spawn "flatpak run com.spotify.Client")
+   ("c" spawn "firejail steam")
+   ("e" spawn "emacsclient -a '' -c")
+   ("r" spawn "firejail pw-jack renoise"))
+  (:exit-to :normal
+            ("C-g" "<escape>" "RET" "s-g"))
+  (:enter-from :main
+               ("a")))
+
+(river-declare-keymap :wideriver)
+
+(river-keymap :wideriver
+  (:bind
+   ;; ratio
+   ("r" send-layout-cmd wideriver "--ratio -0.025")
+   ("R" send-layout-cmd wideriver "--ratio +0.025")
+   ("C-r" send-layout-cmd wideriver "--ratio 0.60")
+   ;; master num
+   ("c" send-layout-cmd wideriver "--count +1")
+   ("C" send-layout-cmd wideriver "--count -1")
+   ("C-c" send-layout-cmd wideriver "--count 1")
+   ;; stack modes
+   ("e" send-layout-cmd wideriver "--stack even")
+   ("d" send-layout-cmd wideriver "--stack dwindle")
+   ("l" send-layout-cmd wideriver "--stack diminish")
+   ;; layouts
+   ("m" send-layout-cmd wideriver "--layout monocle")
+   ("w" send-layout-cmd wideriver "--layout wide")
+   ("h" send-layout-cmd wideriver "--layout left")
+   ("s" send-layout-cmd wideriver "--layout right")
+   ("t" send-layout-cmd wideriver "--layout top") ; not in normal
+   ("n" send-layout-cmd wideriver "--layout bottom") ; nor in normal
+   ("SPC" send-layout-cmd wideriver "--layout-toggle"))
+  (:exit-to :normal
+            ("C-g" "<escape>" "RET" "s-g"))
+  (:enter-from :normal
+               ("s-r")))
+
+(river-declare-keymap :set-focused-tags)
+
+;; TODO: make this into gcrhtnbmw? easier to reach everything, actually viable.
+
+(eval
+ `(river-keymap :set-focused-tags
+    ,(cons ':bind
+           (let ((keys '("g" "c" "r" "l" "h" "t" "n" "s" "b"))
+                 (tags (cl-loop for x from 1 to 9
+                     collect (ash 1 (1- x)))))
+             (cl-loop for c in keys
+                      for n in tags
+                      collect `(,c spawn ,(format "flow toggle-tags %s" n)))))
+    (:enter-from :normal
+                 ("s-s"))
+    (:exit-to :normal
+              ("C-g" "<escape>" "RET" "s-g"))))
+
+
+;;; Layouts
+
+;; set layout-generator
+
+(river-set default-layout wideriver)
+
+(let ((cmd (mapconcat
+	    'identity
+	    '("killall wideriver ;"
+	      "wideriver"
+	      ;; "--layout           left"
+	      ;; "--layout-alt       monocle"
+	      ;; "--stack            even" ; def: dwindle
+	      ;; "--count-master     1"
+	      "--ratio-master     0.60" ; def: 0.50, "s-M-x" set to 0.60
+	      ;; "--count-wide-left  0"
+	      ;; "--ratio-wide       0.35"
+	      "--smart-gaps"		; def nil
+	      "--inner-gaps       10"	; def 0
+	      "--outer-gaps       13"	; def 0
+	      ;; "--border-width     2" ; def 2
+	      "--border-width-monocle          0"
+	      "--border-color-focused          '0x946a90'"
+	      "--border-color-focused-monocle  '0x946a90'"
+	      "--border-color-unfocused        '0x040a0a'"
+	      ;; "--log-threshold    info"
+	      "2>&1 | tee \"/tmp/wideriver.${XDG_VTNR}.log\"")
+	    " \\\n")))
+  (eval `(river-set (spawn ,cmd))))
+
+;; (river-set default-layout rivertile)
+;; (start-process-shell-command "rivertile"
+;;                              "*Messages*"
+;;                              "killall rivertile ; rivertile -view-padding 6 -outer-padding 6")
+
+;; Local Variables:
+;; mode: emacs-lisp
+;; End:

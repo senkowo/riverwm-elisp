@@ -1,0 +1,81 @@
+#!/usr/bin/env sh
+
+## TODO: wifi module, all-round security checks (vpn,etc)
+
+memory() {
+    memory=" $(free -h | sed -n "2s/\([^ ]* *\)\{2\}\([^ ]*\).*/\2/p")"
+    memory="^fg(#a6ffad)$memory^fg(#ffffff)"
+}
+
+cpu() {
+    cpu=" $(grep -o "^[^ ]*" /proc/loadavg)"
+    cpu="^fg(#fac343)$cpu^fg(#ffffff)"
+}
+
+datetime() {
+    datetime="$(date "+%a %d %b %I:%M %P")"
+}
+
+bat() {
+    # Charging/Discharging/Full
+    read -r bat_status </sys/class/power_supply/BAT0/status
+    if [ "$bat_status" = "Charging" ];
+    then bat_extra=" "
+    elif [ "$bat_status" = "Full" ];
+    then bat_extra="o "
+    fi
+    read -r bat_cap </sys/class/power_supply/BAT0/capacity
+    if [ $bat_cap -lt 20 ];
+    then bat_status=""
+    elif [ $bat_cap -lt 40 ];
+    then bat_status=""
+    elif [ $bat_cap -lt 60 ];
+    then bat_status=""
+    elif [ $bat_cap -lt 80 ];
+    then bat_status=""
+    else bat_status=""
+    fi
+    
+    bat="$bat_extra$bat_status $bat_cap%"
+    bat="^fg(#af8ae6)$bat^fg(#ffffff)"
+}
+
+vol() {
+    vol_value="$(volume-print-num.sh)"
+    # if [ $vol_value == muted ];
+    # then vol_symbol=""
+    # elif [ $vol_value -lt 20 ];
+    # then vol_symbol=" "
+    # elif [ $vol_value -lt 40 ];
+    # then vol_symbol=" "
+    # else vol_symbol=" "
+    # fi
+    vol_symbol="vol:"
+    
+    vol="^fg(#54f0f0)$vol_symbol$vol_value^fg(#ffffff)"
+}
+
+display() {
+	echo "all status  $bat  $vol | $datetime |" >"$FIFO"
+}
+
+printf "%s" "$$" > "$XDG_RUNTIME_DIR/status_pid"
+FIFO="$XDG_RUNTIME_DIR/sandbar"
+[ -e "$FIFO" ] || mkfifo "$FIFO"
+sec=0
+
+while true; do
+	sleep 1 &
+	wait && {
+		# [ $((sec % 15)) -eq 0 ] && memory
+		# [ $((sec % 15)) -eq 0 ] && cpu
+		# [ $((sec % 15)) -eq 0 ] && disk
+		[ $((sec % 30)) -eq 0 ] && bat
+		[ $((sec % 3)) -eq 0 ] && vol
+		[ $((sec % 5)) -eq 0 ] && datetime
+
+		[ $((sec % 5)) -eq 0 ] && display
+
+		sec=$((sec + 1))
+	}
+done

@@ -1,0 +1,420 @@
+#!/bin/sh
+
+
+##############
+## Notes:
+##
+## To Add:
+## - lots of extensions & commands to the point where it starts looking like stumpwm.
+## - mod+g for regular map, mod+alt+g for set/toggle map (home row/upper row)
+## - for every map command, analyze the map command, and add it to a special list made for each map/mode, so
+##   can show in pop-ups when accessing maps
+## - separate file for functions?
+##
+##############
+
+
+  ############
+### Settings ###
+  ############
+
+mod="Mod4"
+alt="Mod1"
+ctrl="Control"
+riverctl spawn "dbus-update-activation-environment SEATD_SOCK DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=river SDL_VIDEODRIVER=wayland MOZ_ENABLE_WAYLAND=1 QT_QPA_PLATFORM=wayland"
+
+## Color
+riverctl background-color 0x946a90
+riverctl border-color-focused 0x1e9c8f
+riverctl border-color-unfocused 0x040a0a
+# 0xbbbbbb
+# 0x946a90
+# 0x222222
+
+## Keyboard repeat rate?
+riverctl set-repeat 80 210
+
+## keyboard layout
+riverctl keyboard-layout -variant "dvp," -options "grp:sclk_toggle,ctrl:nocaps" us,us
+
+## tap
+riverctl input "pointer-1267-12864-ELAN0412:00_04F3:3240_Touchpad" tap enabled
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ##########
+### System ###
+  ##########
+
+# Exit river
+riverctl map normal $mod+Shift q exit
+
+# hibernate
+riverctl map normal $mod F12 spawn "loginctl hibernate"
+
+# Reload config (instead, create new term with this cmd?)
+riverctl map normal $mod+$ctrl r spawn "~/.config/river/init"
+
+# lock
+#riverctl map normal $mod+Control L spawn "swaylock" 
+
+# shutdown
+#riverctl map normal $alt+Shift
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ###############
+### Basic stuff ###
+  ###############
+
+# Spawn Terminal
+riverctl map normal $mod Return spawn "alacritty"
+
+# Spawn Emacs
+riverctl map normal $mod+Alt c spawn "emacsclient -a '' -c"
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ###########
+### Windows ###
+  ###########
+
+# Close current window
+riverctl map normal $mod+$alt d close
+
+# change focus in the layout stack
+riverctl map normal $mod n focus-view next
+riverctl map normal $mod t focus-view previous
+
+# swap in the layout stack
+riverctl map normal $mod+Alt n swap next
+riverctl map normal $mod+Alt t swap previous
+
+# bump to focused view
+riverctl map normal $mod+Alt Return zoom
+
+
+# ratio
+riverctl map normal $mod+Alt h send-layout-cmd rivertile "main-ratio +.05"
+riverctl map normal $mod+Alt s send-layout-cmd rivertile "main-ratio -.05"
+
+# change count in master and stack
+riverctl map normal $mod+$ctrl n send-layout-cmd rivertile "main-count +1"
+riverctl map normal $mod+$ctrl t send-layout-cmd rivertile "main-count -1"
+
+
+## Outputs? monitors? (only use main map for this thingy...)
+
+# focus the next/previous output
+riverctl map normal $mod+$ctrl b focus-output previous
+riverctl map normal $mod+$ctrl m focus-output next
+
+# send the focused view to the next/previous output
+riverctl map normal $mod+$ctrl+$alt b send-to-output next
+riverctl map normal $mod+$ctrl+$alt m send-to-output previous
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  #####################
+### Floating controls ###
+  #####################
+
+# change all to shift
+
+# floating mode
+riverctl map normal Super+Shift Space toggle-float
+
+# s-S-{h,t,n,s} to move windows around
+riverctl map normal Super+Shift h move left 100
+riverctl map normal Super+Shift t move up 100
+riverctl map normal Super+Shift n move down 100
+riverctl map normal Super+Shift s move right 100
+
+# s-S-C-{h,t,n,s} to snap views to screen edges
+riverctl map normal Super+Shift+Control h snap left
+riverctl map normal Super+Shift+Control t snap up
+riverctl map normal Super+Shift+Control n snap down
+riverctl map normal Super+Shift+Control s snap right
+
+# s-S-M-{h,t,n,s} to resize views
+riverctl map normal Super+Alt+Shift h resize horizontal -100
+riverctl map normal Super+Alt+Shift t resize vertical 100
+riverctl map normal Super+Alt+Shift n resize vertical -100
+riverctl map normal Super+Alt+Shift s resize horizontal 100
+
+# Left click drag to move floating windows
+riverctl map-pointer normal $mod BTN_LEFT move-view
+
+# Right click drag to resize floating windows (obsolete with keybinds)
+riverctl map-pointer normal $mod BTN_RIGHT resize-view
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ################
+### Window Modes ###
+  ################
+
+# Fullscreen
+riverctl map normal $mod f toggle-fullscreen
+
+## Layout Orientation
+riverctl map normal $mod Up send-layout-cmd rivertile "main-location top"
+riverctl map normal $mod Right send-layout-cmd rivertile "main-location right"
+riverctl map normal $mod Down send-layout-cmd rivertile "main-location bottom"
+riverctl map normal $mod Left send-layout-cmd rivertile "main-location left"
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ##################
+### Window rules ###
+  ##################
+
+# Make all views with an app-id that starts with "float" and title "foo" start floating.
+riverctl rule-add -app-id 'float*' -title 'foo' float
+
+# Make all views with app-id "bar" and any title use client-side decorations
+riverctl rule-add -app-id "bar" csd
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ##################
+### Tags and Focus ###
+  ##################
+
+tr_num_to_symb_name() {
+    case $1 in
+	1) echo "ampersand" ;;
+	2) echo "bracketleft" ;;
+	3) echo "braceleft" ;;
+	4) echo "braceright" ;;
+	5) echo "parenleft" ;;
+	6) echo "equal" ;;
+	7) echo "asterisk" ;;
+	8) echo "parenright" ;;
+	9) echo "plus" ;;
+	*) echo "ERROR: no symb match" >&2 ;;
+    esac
+}
+
+# next tag (requires riverwm-utils/flow/river-shifttags)
+riverctl map normal $mod+Alt b spawn "cycle-focused-tags previous 9"
+riverctl map normal $mod+Alt m spawn "cycle-focused-tags next 9"
+
+
+for i in $(seq 1 9)
+do
+    tags=$((1 << ($i - 1)))
+    # TODO: get literal key for dvp layout
+    a=$(tr_num_to_symb_name "$i")
+
+    # change focused tag (0-8)
+    riverctl map normal $mod $a set-focused-tags $tags
+
+    # move window to another tag (0-8)
+    riverctl map normal $mod+Control $a set-view-tags $tags
+
+    # toggle tag (0-8)
+    riverctl map normal $mod+Shift $a toggle-focused-tags $tags
+
+    # toggle window in another tag [0-8]
+    riverctl map normal $mod+Shift+Control $a toggle-view-tags $tags
+done
+
+# View all tags ("0" and "`")
+# tag focused view with all tags
+all_tags=$(((1 << 32) - 1))
+riverctl map normal $mod bracketright set-focused-tags $all_tags
+riverctl map normal $mod+Shift bracketright set-view-tags $all_tags
+riverctl map normal $mod dollar set-focused-tags $all_tags
+riverctl map normal $mod+Shift dollar set-view-tags $all_tags
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ###########
+### Special ###
+  ###########
+
+## Media Keys
+
+for mode in normal locked
+do
+	# Audio
+	riverctl map $mode None XF86AudioRaiseVolume spawn 'volume-adjust.sh +10%'
+	riverctl map $mode None XF86AudioLowerVolume spawn 'volume-adjust.sh -10%'
+	riverctl map $mode Shift XF86AudioRaiseVolume spawn 'volume-adjust.sh +5%'
+	riverctl map $mode Shift XF86AudioLowerVolume spawn 'volume-adjust.sh -5%'
+	riverctl map $mode None XF86AudioMute spawn 'pactl set-sink-mute @DEFAULT_SINK@ toggle'
+	# Brightness
+	riverctl map $mode None XF86MonBrightnessUp spawn 'brightnessctl set 10%+'
+	riverctl map $mode None XF86MonBrightnessDown spawn 'brightnessctl set 10%-'
+	riverctl map $mode Shift XF86MonBrightnessUp spawn 'brightnessctl set 5%+'
+	riverctl map $mode Shift XF86MonBrightnessDown spawn 'brightnessctl set 5%-'
+	# Media
+	riverctl map $mode None XF86AudioPlay spawn 'playerctl play-pause'
+done
+
+riverctl map normal None Print spawn "grimshot --notify save area"
+riverctl map normal Shift Print spawn "grimshot --notify save output"
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ####################
+### Passthrough mode ###
+  ####################
+
+# Declare a passthrough mode. This mode has only a single mapping to return to
+# normal mode. This makes it useful for testing a nested wayland compositor
+riverctl declare-mode passthrough
+
+# Super+F11 to enter passthrough mode
+riverctl map normal Super F11 enter-mode passthrough
+
+# Super+F11 to return to normal mode
+riverctl map passthrough Super F11 enter-mode normal
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ########
+### Misc ###
+  ########
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ###########
+### Startup ###
+  ###########
+
+# swaybg (TODO: loop: if pgrep >= 2, delete only newest process, iter.)
+# riverctl spawn "swaybg -m fill -i ~/Pictures/wallpapers/chito-yuu-snow-walk.jpg"
+riverctl spawn "pkill -f \"^swaybg\" ; \
+swaybg -m fill -i ~/Pictures/Random-images/glt-landscape2.png"
+
+# notifications
+riverctl spawn 'mako --border-radius=2 --font="Deva Vu Sans 10" --max-visible=5 --outer-margin=5 --margin=3 --background="#1c1f26" --border-color="#89AAEB" --border-size=1 --default-timeout=7000'
+
+# wlsunset
+riverctl spawn "killall wlsunset ; \
+wlsunset -S 10:00 -s 19:00 -t 3000 -T 6500"
+
+# waybar
+# riverctl spawn "(($(pgrep -cx waybar) > 0)) && killall waybar ; \
+# waybar -c $HOME/.config/waybar/config -s $HOME/.config/waybar/style.css"
+
+# sandbar
+# riverctl spawn "maybe-kill-run-program.sh '$HOME/.config/river/bar' 1"
+riverctl spawn "pkill -f \"^sandbar\" ; \
+$HOME/.config/river/bar"
+riverctl spawn "pkill -f \"^sh.*\.config/river/status\" ; \
+$HOME/.config/river/status"
+# riverctl spawn "(($(pgrep -cf "sh.*\.config/river/status") > 0)) && kill $(pgrep -f "sh.*\.config/river/status") ; \
+# $HOME/.config/river/status"
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ################
+### Applications ###
+  ################
+
+# bemenu
+riverctl map normal $mod a spawn "bemenu-run"
+
+# App launcher
+riverctl map normal $mod c spawn 'fuzzel -w 50 -x 8 -y 8 -r 3 -b 232635ff -t A6Accdff -s A6Accdff -S 232635ff -C c792eacc -m c792eacc -f "Iosevka Aile:weight=light:size=11" --no-fuzzy --icon-theme="Papirus-Dark"'
+
+## Start floating
+riverctl float-filter-add app-id float
+#riverctl float-filter-add title "popup title with spaces"
+
+## Decorations
+# Set app-ids and titles of views which should use client side decorations
+#riverctl csd-filter-add app-id "gedit"
+
+
+riverctl spawn 'gsettings set org.gnome.desktop.interface gtk-theme "Matcha-dark-azul"'
+riverctl spawn 'gsettings set org.gnome.desktop.interface icon-theme "Papirus-Dark"'
+riverctl spawn 'gsettings set org.gnome.desktop.interface font-name "Iosevka Aile 11"'
+
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ###########
+### Keymaps ###
+  ###########
+
+### idea:
+# riverctl map normal $mod g spawn "~/.config/river/keymap 'main'"
+## ^- clear all current pop-up menus if exist.
+##    create pop-up menu with all options and then immediately enter-mode 'main'.
+##    exit script.
+# riverctl map main None c spawn "emacsclient -a '' -c ; ~/.config/river/popup"
+## ^- since no arg to script, only clear all current pop-up menus if exist.
+##    exit script.
+###
+## I'm gonna have to make the whole keymap system much simpler to make this sane.
+
+## it's either this or having everything in mode/keymap name...
+## would have to make list first, then process, then declare-mode,
+## then run all the commands, all in one macro/function...
+
+### Option 3:
+## In elisp config, after each map add, add
+## "mode" "keybind" "command"
+## in each line of a tmp file,
+## and ~/.config/river/popup will delete all current popups, take argument 'main',
+## parse through all the lines and collect each line with matching start,
+## then print them to the screen.
+
+### Option 4:
+## wk package.
+## problem solved.
+
+
+riverctl declare-mode main
+riverctl map main None g spawn "emacsclient -a '' -c"
+riverctl map -release main None g enter-mode normal
+riverctl map main None n spawn "/home/nya/code/in-use/rofi-network-manager/rofi-network-manager.sh"
+riverctl map -release main None n enter-mode normal
+
+riverctl map -release main $ctrl g enter-mode normal
+riverctl map -release main None Escape enter-mode normal
+riverctl map -release main None Return enter-mode normal
+
+riverctl map normal $mod g enter-mode main
+
+
+riverctl declare-mode apps
+riverctl map apps None f spawn "firefox"
+riverctl map -release apps None f enter-mode normal
+riverctl map apps None p spawn "firejail keepassxc"
+riverctl map -release apps None p enter-mode normal
+riverctl map apps None d spawn "flatpak run dev.vencord.Vesktop"
+riverctl map -release apps None d enter-mode normal
+riverctl map apps None s spawn "flatpak run com.spotify.Client"
+riverctl map -release apps None s enter-mode normal
+riverctl map apps None c spawn "firejail steam"
+riverctl map -release apps None c enter-mode normal
+riverctl map apps None e spawn "emacsclient -a '' -c"
+riverctl map -release apps None e enter-mode normal
+riverctl map apps None r spawn "firejail pw-jack renoise"
+riverctl map -release apps None r enter-mode normal
+
+riverctl map -release apps $ctrl g enter-mode normal
+riverctl map -release apps None Escape enter-mode normal
+riverctl map -release apps None Return enter-mode normal
+
+riverctl map main None a enter-mode apps
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  ###########
+### Layouts ###
+  ###########
+
+
+## Default layout generator
+##### MOVED TO THE BOTTOM
+riverctl default-layout rivertile
+rivertile -view-padding 6 -outer-padding 6 &

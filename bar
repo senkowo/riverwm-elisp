@@ -1,0 +1,77 @@
+#!/usr/bin/env sh
+
+FIFO="$XDG_RUNTIME_DIR/sandbar"
+[ -e "$FIFO" ] && rm -f "$FIFO"
+mkfifo "$FIFO"
+
+# active-fg: active number color
+# active-bg: active number bg b500ff
+#946a90 classic
+#b500ff purp?
+#6f6fe3 nice blue
+#6f6fe9
+#6e6edb like (blue)
+#7373de
+#806edb
+#7e74cf burp (nicer flavor)
+#887fc9 niice (dwm close)
+#7a73e6 not bad
+#5e69a8 hm not bad
+#cf74c6 pleasant pink
+# try getting set of colors using website?
+
+### Blog for methods for pallete generation:
+# https://blog.z3bra.org/2015/06/vomiting-colors.html
+
+# colors output:
+#0c0e0e
+#161c20
+#1f2e36
+#283e4e
+#2e4a6e
+#3d6098
+#5d7588
+#658ab0 # alright
+# attempt 2
+#090a0a
+#0d1010
+#121618
+#171e22
+#1c282e
+#22333d
+#243c4f
+#284569
+#344552
+#315189
+#435e7c
+#4167a4
+#5b7183
+#5b88bd
+#64819b
+#7996a8
+#804d91
+#815091 ; good
+#604f66 ; damp 
+#77498c
+#554151 ; huh
+#964C7B
+
+col1="#964C7B"
+
+while cat "$FIFO"; do :; done | sandbar \
+	-font "TamzenForPowerline-16" \
+	-active-fg-color "#eeeeee" \
+	-active-bg-color "$col1" \
+	-inactive-fg-color "#dddddd" \
+	-title-fg-color "#eeeeee" \
+	-title-bg-color "$col1" \
+	-vertical-padding 3 \
+	-bottom
+	# -inactive-bg-color "#000000" \
+	# -urgent-fg-color "#000000" \
+	# -urgent-bg-color "#cc241d" \
+
+
+# Local Variables:
+# eval: (rainbow-mode 1)
+# End:

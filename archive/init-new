@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+
+# if env var RIVER_OLD_CONFIG=1, exec the old config. if else, exec the elisp one.
+

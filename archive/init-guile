@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+exec guile -s "$0" "$@"
+!#
+
+(use-modules (os process))
+
+(define (riverctl-run-command command)
+  (run-concurrently (map (car) (string-split command #\space)))
+  )
+
+(riverctl-run-command "emacsclient -c")
+(riverctl-run-command "emacsclient -c")
+
+;; (run-concurrently "emacsclient" "-c")
+;; (run-concurrently "emacsclient" "-c")
+
+;; (system "emacsclient -c &")
+;; (system "emacsclient -c &")
+
+
+;; Local Variables:
+;; mode: scheme
+;; End:

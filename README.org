@@ -1,0 +1,57 @@
+#+Title: RiverWM Elisp configuration
+
+* About:
+
+RiverWM configured in Emacs Lisp, implementing keychords, emacs kbd format keybinds, sleek and clean setup macros, and more.
+
+This configuration is separated into several modules/libraries that provide functions and macros of a certain functionality. In your user-side config, you load these modules to access their features.
+
+Keybinds are defined using a macro like this:
+
+#+begin_src elisp
+
+  (river-bind normal
+    ("s-<tab>" focus-previous-tags)
+    ("s-M-s" spawn "flow cycle-tags next"))
+
+  ;; or
+
+  (river-bind
+    (:mode normal
+     ("s-<tab>" focus-previous-tags)
+     ("s-M-s" spawn "flow cycle-tags next")))
+
+#+end_src
+
+The kbd-formatted strings will automatically be converted to RiverWM's keybind syntax.
+
+
+Keychords are set like this:
+
+#+begin_src elisp
+
+  (river-keymap apps
+    (:create-map)
+    (:bind
+     ("f" spawn "firefox")
+     ("l" spawn "flatpak run io.gitlab.librewolf-community")
+     ("p" spawn "firejail keepassxc")
+     ("d" spawn "flatpak run dev.vencord.Vesktop")
+     ("s" spawn "flatpak run com.spotify.Client")
+     ("c" spawn "firejail steam")
+     ("e" spawn "emacsclient -a '' -c")
+     ("r" spawn "firejail pw-jack renoise"))
+    (:exit-to normal
+     ("C-g" "<escape>" "RET" "s-g"))
+    (:enter-from main
+     ("a")))
+
+#+end_src
+
+This example creates the "apps" mode/keymap, creates binds within that mode, creates binds for keys that exit to "normal" mode, and creates binds for keys in the "main" mode that enter the "apps" mode.
+
+Implementing this code in POSIX/Bash would be incredibly messy, tedious, and hacky, so this macro is really great.
+
+* TODO:
+
+- 
